@@ -1,0 +1,14 @@
+# Ignore python cache file
+.vscode/
+__pycache__/
+*.py[cod]
+
+# Ignore logs
+logs/
+*.log
+
+# Anything else
+.venv
+.env
+venv/
+.venv/
