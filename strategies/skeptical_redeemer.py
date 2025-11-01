@@ -19,7 +19,7 @@ class SkepticalRedeemer(BaseStrategy):
     P_MISTRUST = 0.25
 
     def __init__(self):
-        super().__init__("Skeptical Redeemer")
+        super().__init__()
         self.grudge_list = set()
         self.strike_counts = {}
 

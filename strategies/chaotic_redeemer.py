@@ -22,7 +22,7 @@ class ChaoticRedeemer(BaseStrategy):
     P_MISJUDGE = 0.25
 
     def __init__(self):
-        super().__init__("Chaotic Redeemer")
+        super().__init__()
         self.grudge_list = set()
         self.strike_counts = {}
 

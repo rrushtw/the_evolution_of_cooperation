@@ -13,8 +13,7 @@ class BaseStrategy(abc.ABC):
     - 歷史
     """
 
-    def __init__(self, name: str):
-        self.name = name  # 策略 "種類" 名稱 (e.g., "Redeemer")
+    def __init__(self):
         self.unique_id = str(uuid.uuid4())  # 策略 "個體" 的唯一 ID
 
         # ( reset() 會被 super() 呼叫 )
@@ -69,6 +68,3 @@ class BaseStrategy(abc.ABC):
         # 3. 更新策略總分
         score = PAYOFF[match_result]
         self.total_score += score
-
-    def __str__(self):
-        return self.name

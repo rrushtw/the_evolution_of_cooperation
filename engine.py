@@ -1,5 +1,4 @@
 import random
-import itertools
 from tqdm import tqdm
 from definitions import Move, RESULT_MATRIX
 from strategies.base_strategy import BaseStrategy

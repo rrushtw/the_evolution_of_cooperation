@@ -55,19 +55,26 @@ def run_evolution_simulation(
         for _ in range(initial_copies):
             population.append(s_type())
 
-    total_population = len(population)
     generation = 0
     stability_counter = 0
-    # 儲存 "上次" 存活的策略種類 (set of names)
-    last_surviving_types_set = set()
-    # 記錄滅絕順序 (最先滅絕的, 放在最前面)
+
+    # --- 2. 在迴圈外, 先印出 "初始狀態" (世代 0) ---
+    current_counts = collections.Counter(type(s).__name__ for s in population)
+    current_surviving_types_set = set(current_counts.keys())
+
+    print("\n--- 世代 0 (初始狀態) ---")
+    print(f"存活: {len(current_surviving_types_set)} 種")
+    for name, count in current_counts.most_common():
+        print(f"  - {name:<20}: {count} 個體")
+
+    last_surviving_types_set = current_surviving_types_set
     extinction_order: list[str] = []
 
-    # --- 2. 世代主迴圈 (Main Loop) ---
+    # --- 3. 世代主迴圈 (Main Loop) ---
     while True:
         generation += 1
 
-        # --- 3. 評估 (Evaluation) ---
+        # --- 4. 評估 (Evaluation) ---
         # 呼叫 engine.py 為 "所有" 個體 (70個) 進行評分
         # sorted_population 是依分數排序的 "個體 (instances)" 列表
         sorted_population = engine.run_tournament(
@@ -77,40 +84,36 @@ def run_evolution_simulation(
             noise
         )
 
-        # --- 4. 統計與追蹤 (Track) ---
-        # 統計當前群體中, 各 "種類" 的數量
+        # --- 5. 演化 (Selection/Reproduction) ---
+        population = sorted_population[:-kill_count]
+        top_templates = sorted_population[:kill_count]
+        new_clones = [type(template)() for template in top_templates]
+        population.extend(new_clones)
+
+        # --- 6. 統計與追蹤 (列印 "演化後" 的結果) ---
         current_counts = collections.Counter(
             type(s).__name__ for s in population)
         # 當前存活的 "種類" set
         current_surviving_types_set = set(current_counts.keys())
 
-        print(f"\n--- 世代 {generation} ---")
+        print(f"\n--- 世代 {generation} (演化後) ---")
         print(
             f"存活: {len(current_surviving_types_set)} 種 | 穩定度: {stability_counter}/{stability_threshold}")
         # 依數量排序印出
         for name, count in current_counts.most_common():
             print(f"  - {name:<20}: {count} 個體")
 
-        # --- 5. 檢查滅絕 (Check Extinction) ---
-        # 找出 "上次還在, 這次不見" 的種類
+        # --- 7. 檢查滅絕 ---
         just_extinct = last_surviving_types_set - current_surviving_types_set
         if just_extinct:
             for name in just_extinct:
-                extinction_order.append(name)  # 加入滅絕列表
+                extinction_order.append(name)
                 print(f"!!! 💀 滅絕事件: {name} 已被淘汰 !!!")
 
-        # --- 6. 檢查終止條件 (Termination) ---
-
-        # 條件 1: 生態系穩定 (您要求的 100 輪)
-        if current_surviving_types_set == last_surviving_types_set:
-            stability_counter += 1
-        else:
-            stability_counter = 0  # 重置計數器
-            last_surviving_types_set = current_surviving_types_set  # 更新
-
+        # --- 8. 檢查終止條件 ---
         if stability_counter >= stability_threshold:
             print("\n" + "="*40)
-            print("🏁 模擬結束：生態系已達穩定狀態")
+            print(f"🏁 模擬結束：生態系已達穩定狀態 (連續 {stability_threshold} 世代)")
             print("="*40)
             return _get_final_ranking(current_counts, extinction_order, stable=True)
 
@@ -121,20 +124,10 @@ def run_evolution_simulation(
             print("="*40)
             return _get_final_ranking(current_counts, extinction_order, stable=False)
 
-        # --- 7. 演化 (Evolution) ---
-
-        # a) 淘汰 (Selection)
-        # 移除分數最低的 5 個 "個體"
-        population = sorted_population[:-kill_count]  # 保留分數高的
-
-        # b) 補位 (Reproduction)
-        # 複製分數最高的 5 個 "個體" 的 "種類"
-        top_templates = sorted_population[:kill_count]
-        new_clones = [type(template)() for template in top_templates]
-
-        # 將 5 個新個體加入群體, 維持總數
-        population.extend(new_clones)
-
-        # 檢查總數是否恆定 (除錯用)
-        if len(population) != total_population:
-            print(f"警告: 群體數量異常! {len(population)}")
+        # --- 9. 【關鍵】更新穩定度計數器 ---
+        #    (移到迴圈的 "最後", 在檢查完終止條件 "之後")
+        if current_surviving_types_set == last_surviving_types_set:
+            stability_counter += 1
+        else:
+            stability_counter = 0
+            last_surviving_types_set = current_surviving_types_set

@@ -17,9 +17,6 @@ class GenerousTitForTat(BaseStrategy):
     # 10% 的慷慨機率
     P_GENEROUS = 0.1
 
-    def __init__(self):
-        super().__init__("Generous TFT")
-
     def play(self, opponent_unique_id: str, opponent_history: list[dict]) -> Move:
 
         private_history_list = self.opponent_history.get(opponent_unique_id, [])

@@ -13,9 +13,6 @@ class TitForTwoTats(BaseStrategy):
     3. 這使它能原諒 "單次" 的雜訊或背叛。
     """
 
-    def __init__(self):
-        super().__init__("Tit-for-Two-Tats")
-
     def play(self, opponent_unique_id: str, opponent_history: list[dict]) -> Move:
 
         private_history_list = self.opponent_history.get(opponent_unique_id, [])

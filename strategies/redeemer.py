@@ -20,7 +20,7 @@ class Redeemer(BaseStrategy):
     STRIKE_LIMIT = 3  # 記點 3 次觸發
 
     def __init__(self):
-        super().__init__("Redeemer")
+        super().__init__()
         # "黑名單" (Grudge list)
         self.grudge_list = set()
         # "記點" 系統 (Strike count)

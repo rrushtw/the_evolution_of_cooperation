@@ -17,9 +17,6 @@ class Joss(BaseStrategy):
     # 10% 的偷襲機率
     P_SNEAKY = 0.1
 
-    def __init__(self):
-        super().__init__("Joss (Sneaky)")
-
     def play(self, opponent_unique_id: str, opponent_history: list[dict]) -> Move:
 
         private_history_list = self.opponent_history.get(opponent_unique_id, [])

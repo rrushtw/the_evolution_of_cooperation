@@ -18,7 +18,7 @@ class TolerantGrudger(BaseStrategy):
     STRIKE_LIMIT = 3  # 連續背叛 3 次觸發
 
     def __init__(self):
-        super().__init__("Tolerant Grudger")
+        super().__init__()
         # 用一個 set 來儲存 "黑名單"
         self.grudge_list = set()
 

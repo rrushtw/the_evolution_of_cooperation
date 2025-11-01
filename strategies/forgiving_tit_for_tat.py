@@ -15,9 +15,6 @@ class ForgivingTitForTat(BaseStrategy):
     (此策略只看 "私怨"，忽略傳入的 opponent_history)
     """
 
-    def __init__(self):
-        super().__init__("Forgiving TFT")  # (用一個短一點的名字)
-
     def play(self, opponent_unique_id: str, opponent_history: list[dict]) -> Move:
 
         # 1. 取得 "私怨" 列表

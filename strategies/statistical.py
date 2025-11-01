@@ -19,9 +19,6 @@ class Statistical(BaseStrategy):
     COOPERATION_THRESHOLD = 0.6  # 合作率必須 "大於等於 60%"
     # ---------------------------
 
-    def __init__(self):
-        super().__init__("Statistical")
-
     def play(self,
              opponent_unique_id: str,
              opponent_history: list[dict]

@@ -15,7 +15,7 @@ class Grudger(BaseStrategy):
     """
 
     def __init__(self):
-        super().__init__("Grudger")
+        super().__init__()
         # 用一個 set 來儲存 "我恨誰" (我對誰懷恨在心)
         self.grudge_list = set()
 

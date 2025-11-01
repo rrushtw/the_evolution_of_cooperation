@@ -5,9 +5,6 @@ from definitions import Move
 class TitForTat(BaseStrategy):
     """以牙還牙 (TFT)"""
 
-    def __init__(self):
-        super().__init__("Tit-for-Tat")
-
     def play(self, opponent_unique_id: str, opponent_history: list[dict]) -> Move:
         # 1. 取得 "私怨" 列表
         #    使用 .get(key, default) 更安全，避免 KeyError
