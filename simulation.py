@@ -32,6 +32,7 @@ def run_evolution_simulation(
     initial_copies: int,         # e.g., 10
     kill_count: int,             # e.g., 5
     rounds_per_game: int,
+    avg_matches_per_strategy: int,
     noise: float,
     stability_threshold: int     # e.g., 100
 ):
@@ -40,8 +41,11 @@ def run_evolution_simulation(
     """
     print("--- 🚀 開始演化模擬 ---")
     print(f"設定: {len(strategy_types)} 種策略, 每種 {initial_copies} 個體")
-    print(
-        f"淘汰/補位: {kill_count} | 雜訊: {noise*100:.1f}% | 穩定閾值: {stability_threshold} 世代")
+    print(f"淘汰/補位: {kill_count}")
+    print(f"場均: {avg_matches_per_strategy}")
+    print(f"回合/場: {rounds_per_game}")
+    print(f"雜訊: {noise*100:.1f}%")
+    print(f"穩定閾值: {stability_threshold} 世代")
     print("---------------------------------")
 
     # --- 1. 初始化群體 (Initialize Population) ---
@@ -69,6 +73,7 @@ def run_evolution_simulation(
         sorted_population = engine.run_tournament(
             population,
             rounds_per_game,
+            avg_matches_per_strategy,
             noise
         )
 
