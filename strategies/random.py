@@ -9,5 +9,5 @@ class Random(BaseStrategy):
     def __init__(self):
         super().__init__("Random")
 
-    def play(self, opponent_id: str, opponent_history: list[dict]) -> Move:
+    def play(self, opponent_unique_id: str, opponent_history: list[dict]) -> Move:
         return Move.COOPERATE if random.random() < 0.5 else Move.CHEAT

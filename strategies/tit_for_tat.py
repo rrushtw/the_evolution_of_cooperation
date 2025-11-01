@@ -8,10 +8,10 @@ class TitForTat(BaseStrategy):
     def __init__(self):
         super().__init__("Tit-for-Tat")
 
-    def play(self, opponent_id: str, opponent_history: list[dict]) -> Move:
+    def play(self, opponent_unique_id: str, opponent_history: list[dict]) -> Move:
         # 1. 取得 "私怨" 列表
         #    使用 .get(key, default) 更安全，避免 KeyError
-        private_history_list = self.opponent_history.get(opponent_id, [])
+        private_history_list = self.opponent_history.get(opponent_unique_id, [])
 
         if not private_history_list:
             # 2. 沒有 "私怨" 歷史 (第一回合)，則合作

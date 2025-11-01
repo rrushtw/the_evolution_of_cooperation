@@ -19,10 +19,10 @@ class Pavlov(BaseStrategy):
     def __init__(self):
         super().__init__("Pavlov (WSLS)")
 
-    def play(self, opponent_id: str, opponent_history: list[dict]) -> Move:
+    def play(self, opponent_unique_id: str, opponent_history: list[dict]) -> Move:
 
         # 1. 取得 "私怨" 列表
-        private_history_list = self.opponent_history.get(opponent_id, [])
+        private_history_list = self.opponent_history.get(opponent_unique_id, [])
 
         if not private_history_list:
             # 2. 第一回合，總是合作

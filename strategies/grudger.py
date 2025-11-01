@@ -19,21 +19,21 @@ class Grudger(BaseStrategy):
         # 用一個 set 來儲存 "我恨誰" (我對誰懷恨在心)
         self.grudge_list = set()
 
-    def play(self, opponent_id: str, opponent_history: list[dict]) -> Move:
+    def play(self, opponent_unique_id: str, opponent_history: list[dict]) -> Move:
 
         # 1. 檢查這個對手是否已在我的 "黑名單" 上
-        if opponent_id in self.grudge_list:
+        if opponent_unique_id in self.grudge_list:
             return Move.CHEAT
 
         # 2. 如果不在黑名單上，檢查 "私怨" 歷史
-        private_history_list = self.opponent_history.get(opponent_id, [])
+        private_history_list = self.opponent_history.get(opponent_unique_id, [])
 
         # 3. 掃描 "所有" 過去的回合
         for record in private_history_list:
             if record["opponent_actual_move"] == Move.CHEAT:
                 # 4. 找到了！對手曾經背叛過
                 #    將他加入黑名單，並從這回合開始永遠背叛
-                self.grudge_list.add(opponent_id)
+                self.grudge_list.add(opponent_unique_id)
                 return Move.CHEAT
 
         # 5. 如果歷史清白，且不在黑名單上，則合作

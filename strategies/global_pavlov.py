@@ -17,13 +17,13 @@ class GlobalPavlov(BaseStrategy):
     3. 如果上一回合的結果是 "輸" (SUCKER 或 PUNISHMENT)，
        則 "改變 (Shift)" 上一回合的出招。
 
-    (此策略 "忽略" 傳入的 opponent_id 和 opponent_history)
+    (此策略 "忽略" 傳入的 opponent_unique_id 和 opponent_history)
     """
 
     def __init__(self):
         super().__init__("Global Pavlov")
 
-    def play(self, opponent_id: str, opponent_history: list[dict]) -> Move:
+    def play(self, opponent_unique_id: str, opponent_history: list[dict]) -> Move:
 
         # 1. 檢查 "全局歷史"
         if not self.my_history:

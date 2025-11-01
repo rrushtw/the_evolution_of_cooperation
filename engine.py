@@ -23,9 +23,9 @@ def play_game(strategy1: BaseStrategy, strategy2: BaseStrategy, rounds: int, noi
 
         # 3. & 4. 取得雙方的 "意圖" 出招
         intended_move1 = strategy1.play(
-            opponent_id=strategy2.name, opponent_history=strategy2_history)
+            opponent_unique_id=strategy2.unique_id, opponent_history=strategy2_history)
         intended_move2 = strategy2.play(
-            opponent_id=strategy1.name, opponent_history=strategy1_history)
+            opponent_unique_id=strategy1.unique_id, opponent_history=strategy1_history)
 
         # 5. 處理雜訊 (Noise Module)
         actual_move1 = apply_noise(intended_move1, noise)
@@ -38,7 +38,7 @@ def play_game(strategy1: BaseStrategy, strategy2: BaseStrategy, rounds: int, noi
         # 策略會 "自己" 內部更新分數和歷史 (根據 BaseStrategy 的設計)
 
         strategy1.update(
-            opponent_id=strategy2.name,
+            opponent_unique_id=strategy2.unique_id,
             my_intended_move=intended_move1,
             my_actual_move=actual_move1,
             opponent_intended_move=intended_move2,
@@ -52,7 +52,7 @@ def play_game(strategy1: BaseStrategy, strategy2: BaseStrategy, rounds: int, noi
         # 否則 s1 (即 s2) 的分數會被加兩次。
         if strategy1 is not strategy2:
             strategy2.update(
-                opponent_id=strategy1.name,
+                opponent_unique_id=strategy1.unique_id,
                 my_intended_move=intended_move2,
                 my_actual_move=actual_move2,
                 opponent_intended_move=intended_move1,
