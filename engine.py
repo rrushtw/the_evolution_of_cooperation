@@ -1,4 +1,6 @@
 import random
+import itertools  # <-- 1. 匯入 itertools
+from tqdm import tqdm  # <-- 2. 匯入 tqdm
 from definitions import Move, RESULT_MATRIX
 from strategies.base_strategy import BaseStrategy
 
@@ -88,22 +90,30 @@ def run_tournament(strategies: list[BaseStrategy], rounds_per_game: int, noise: 
     for strategy in strategies:
         strategy.reset()
 
-    # 2. 進行循環賽 (n x n)
-    #    (i 從 0 到 n-1)
-    #    (j 從 i 到 n-1) -> 這會包含 (s1 vs s1), (s1 vs s2), (s2 vs s2) 等
-    for i in range(len(strategies)):
-        for j in range(i, len(strategies)):
+    # --- 2. 使用 itertools 建立所有對戰組合 ---
+    # 需要的 (n * (n+1) / 2) 場比賽
+    pair_iterator = itertools.combinations_with_replacement(strategies, 2)
 
-            s1 = strategies[i]
-            s2 = strategies[j]
+    # 計算總對戰場數, 供 tqdm 顯示
+    n = len(strategies)
+    total_matches = (n * (n + 1)) // 2
 
-            # 3. 進行一場對戰
-            # play_game 會 "修改" s1 和 s2 的內部狀態 (分數和歷史)
-            play_game(s1, s2, rounds_per_game, noise)
+    # --- 3. 使用 tqdm 包裹 iterator ---
+    progress_bar = tqdm(
+        pair_iterator,
+        total=total_matches,  # 總步數
+        desc="  單世代循環賽",  # 進度條的標題
+        leave=False,  # 進度條完成後會消失 (在世代循環中比較乾淨)
+        unit=" 場"
+    )
 
-            pass
+    # 4. 進行循環賽，從 "巢狀迴圈" 改為 "單迴圈"
+    for s1, s2 in progress_bar:
+        # 執行一場對戰 (s1 vs s2)
+        play_game(s1, s2, rounds_per_game, noise)
 
-    print("--- 循環賽結束 ---")
+    # 由於 progress_bar (leave=False) 會清除該行，我們加一個 \r
+    print("\r--- 循環賽結束 ---")
 
     # 5. 分數已經在策略物件內部了，直接排序
     sorted_strategies = sorted(

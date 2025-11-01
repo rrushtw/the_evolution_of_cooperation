@@ -1,28 +1,29 @@
-# The Evolution of Cooperation: 重複囚徒困境 (IPD) 模擬器
+# 合作的演化：演化模擬器 (Evolutionary Simulation)
 
 這是一個受到 Robert Axelrod 經典著作《合作的演化》(The Evolution of Cooperation) 啟發的 Python 專案。
 
-本專案旨在建立一個靈活的模擬引擎，用於測試在「重複囚徒困境」(Iterated Prisoner's Dilemma, IPD) 賽局中，不同策略的演化與生存能力。
+本專案從一個「單次循環賽」模擬器，已升級為一個完整的「演化模擬器」。它不再是回答「哪個策略單次最強？」，而是回答「哪個策略能在演化中存活下來？」。
 
-## 專案核心設計
+## 專案核心機制
 
-與傳統的 IPD 模擬不同，本專案的 `BaseStrategy` (策略基底) 具有一個獨特的雙重記憶系統：
+本模擬器採用「世代」(Generation) 推進的模式：
 
-1. 私有記憶 (`self.opponent_history`):
-    - 策略儲存其與特定對手的「私怨」。
-    - 例如 `TitForTat` (牙還牙) 只會查看這份記憶。
-2. 公開日誌 (`self.my_history`):
-    - 策略儲存其在所有比賽中的「全局歷史」。
-    - `engine` (模擬引擎) 會在每次 `play` 時，將一方的「公開日誌」作為參數 (`opponent_history`) 傳遞給另一方。
-
-這使得高階策略（例如「偵探」策略）不僅可以分析「私怨」，還可以分析對手的「公評」，來決定如何行動。
+1. 初始化 (Initialize): 系統會為 strategies/ 目錄下的每種策略，產生 N 個「個體 (instances)」(例如 10 個)，建立一個大型群體。
+2. 評估 (Evaluation): 在每個世代，群體中的所有個體都會進行一次完整的循環賽 (由 engine.py 搭配 tqdm 進度條執行)。
+3. 演化 (Evolve):
+    - 淘汰 (Selection): 該世代中得分最低的 5 個個體將被淘汰（死亡）。
+    - 補位 (Reproduction): 得分最高的 5 個個體的「種類 (Type)」將被複製（誕生），並加入群體中，維持總數恆定。
+4. 排名 (Ranking): 最終排名由「種類的滅絕順序」決定。最先在群體中歸零的策略種類，排名最低。
+5. 終止 (Termination): 當生態系達到穩定（存活的種類組合連續 100 世代不變），或只剩下一種策略時，模擬結束。
 
 ## 專案結構
 ```
 project/
-├── app.py                 # <-- 專案主程式 (執行循環賽)
-├── engine.py              # <-- 核心模擬引擎 (play_game, run_tournament)
-├── definitions.py         # <-- 遊戲核心定義 (Move, MatchResult, PAYOFF, RESULT_MATRIX)
+├── .devcontainer/         # <-- 包含 Dev Container 設定
+├── app.py                 # <-- 專案主程式 (啟動演化模擬)
+├── simulation.py          # <-- 【新】演化模擬器 (管理世代、淘汰、補位)
+├── engine.py              # <-- 核心循環賽引擎 (被 simulation 呼叫)
+├── definitions.py         # <-- 遊戲核心定義 (Move, MatchResult, PAYOFF)
 ├── requirements.txt
 └── strategies/            # <-- 存放所有策略的目錄
     ├── base_strategy.py   # <-- 所有策略的 "抽象合約"
@@ -32,58 +33,44 @@ project/
     ├── grudger.py
     ├── pavlov.py
     ├── global_pavlov.py
-    └── random.py
+    ├── random.py
+    └── ... (所有其他策略)
 ```
 
 ## 如何執行
 
-執行主程式 app.py：
-``` bash
-python app.py
-```
+本專案已配置 Dev Container，推薦使用。
 
-`app.py` 預設會執行兩場循環賽：一場在 `0%` 雜訊環境下，一場在 `5%` 雜訊環境下，以便您比較策略在不同環境下的強韌性。
+1. 使用 Dev Container (推薦)
+    1. 在 VS Code 中開啟此專案。
+    2. VS Code 偵測到 `.devcontainer` 後，選擇 "Reopen in Container"。
+    3. `postCreateCommand` 將自動執行 `pip install -r requirements.txt` 安裝所有依賴。
+    4. 待容器建立完成後，直接在 VS Code 的終端機中執行：
+    ``` sh
+    python app.py
+    ```
+2. 在本機 (Local) 執行
+如果您未在 Dev Container 中開啟，請手動執行以下步驟：
+    1. 安裝依賴 (包含 tqdm)：
+    ``` sh
+    pip install -r requirements.txt
+    ```
+    2. 執行主程式 `app.py`：
+    ``` sh
+    python app.py
+    ```
 
-## 目前已實作的策略
+app.py 會自動從 strategies/ 目錄載入所有策略，並執行兩次完整的演化模擬：
+1. 無雜訊 (0% Noise) 環境。
+2. 有雜訊 (5% Noise) 環境。
 
-- AlwaysCheat: 永遠背叛 (All-D)。
-- AlwaysCooperate: 永遠合作 (All-C)。
-- TitForTat (TFT): 牙還牙。善良、寬容、易辨識。
-- Grudger (怨恨者): 恐怖策略 (Grim Trigger)。善良，但絕不寬恕。
-- Pavlov (WSLS): 巴甫洛夫 (贏定輸變)。根據與特定對手的上一回合結果來決策。
-- GlobalPavlov: 全局巴甫洛夫。根據自己的全局上一回合（無論對手是誰）的結果來決策。
-- Random: 隨機出招 (50% 合作, 50% 背叛)。
+模擬結束後，您會在終端機底部看到一份並排的「最終總結排名」。
 
-## 如何新增您自己的策略
+## S策略的雙重記憶系統
 
-這個架構的擴充性非常高：
-1. 在 `strategies/` 目錄下建立一個新檔案 (例如 `my_strategy.py`)。
-2. 從 `base_strategy` 匯入並繼承 `BaseStrategy`。
-3. 實作 `__init__` (給它一個名字) 和 `play` 方法。
-4. `play` 方法會接收 `opponent_id` (私怨) 和 `opponent_history` (對手的公評)。
-5. 在 `app.py` 中匯入您的新策略，並將其實例化後加入 `strategy_list`。
-6. 執行 `python app.py` 觀察它的表現！
-``` py
-# strategies/my_strategy.py
-from strategies.base_strategy import BaseStrategy
-from definitions import Move, MatchResult
+本專案的 `BaseStrategy` 具有一個獨特的雙重記憶系統：
 
-class MyStrategy(BaseStrategy):
-    def __init__(self):
-        super().__init__("My Cool Strategy")
+1. 私有記憶 (`self.opponent_history`): 策略與特定對手的「私怨」。
+2. 公開日誌 (`self.my_history`): 策略的「全局歷史」。
 
-    def play(self, opponent_id: str, opponent_history: list[dict]) -> Move:
-        #
-        # 在這裡實作您的決策邏輯...
-        #
-        # 您可以讀取 "私怨":
-        # private_log = self.opponent_history.get(opponent_id, [])
-        #
-        # 您也可以讀取 "公評":
-        # public_log = opponent_history
-        #
-        if len(opponent_history) > 10:
-             return Move.CHEAT # 範例
-        
-        return Move.COOPERATE
-```
+在 `play` 時，`engine` 會將對手的「公開日誌」(`opponent_history`) 傳遞給策略，使其可以同時分析「私怨」和「公評」來做出決策。
