@@ -1,5 +1,6 @@
 # strategies/base_strategy.py
 import abc
+import random
 import uuid
 from definitions import Move, MatchResult, PAYOFF  # 從根目錄的 definitions.py 匯入
 
@@ -12,6 +13,8 @@ class BaseStrategy(abc.ABC):
     - 分數
     - 歷史
     """
+
+    P_INTERNAL_NOISE = 0.02  # 2% 內部雜訊
 
     def __init__(self):
         self.unique_id = str(uuid.uuid4())  # 策略 "個體" 的唯一 ID
@@ -36,6 +39,22 @@ class BaseStrategy(abc.ABC):
             opponent_unique_id (str): 對手的 "個體" ID。
         """
         pass
+
+    def apply_internal_noise(self, intended_move: Move) -> Move:
+        """
+        模擬 "內部雜訊"
+
+        Args:
+            intended_move (Move): 來自 play() 的 "真實意圖"。
+
+        Returns:
+            Move: "說出口的" 意圖 (Slipped Intent)。
+        """
+        if random.random() < self.P_INTERNAL_NOISE:
+            # 2% 的機率 "手滑"
+            return Move.CHEAT if intended_move == Move.COOPERATE else Move.COOPERATE
+
+        return intended_move
 
     def update(self,
                opponent_unique_id: str,

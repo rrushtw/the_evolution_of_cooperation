@@ -64,14 +64,18 @@ def run_tournament(strategies: list[BaseStrategy], rounds_per_game: int, avg_mat
         s2_public_log = strategy2.my_history
 
         # 3. & 4. 取得雙方的 "意圖" 出招
-        intended_move1 = strategy1.play(
+        true_intent1 = strategy1.play(
             opponent_unique_id=strategy2.unique_id, opponent_history=s2_public_log)
-        intended_move2 = strategy2.play(
+        true_intent2 = strategy2.play(
             opponent_unique_id=strategy1.unique_id, opponent_history=s1_public_log)
 
+        # 取得 "手滑後的意圖" (Slipped Intent)
+        slipped_intent1 = strategy1.apply_internal_noise(true_intent1)
+        slipped_intent2 = strategy2.apply_internal_noise(true_intent2)
+
         # 5. 處理雜訊
-        actual_move1 = apply_noise(intended_move1, noise)
-        actual_move2 = apply_noise(intended_move2, noise)
+        actual_move1 = apply_noise(slipped_intent1, noise)
+        actual_move2 = apply_noise(slipped_intent2, noise)
 
         # 6. 查詢 "語意結果"
         (result1, result2) = RESULT_MATRIX[(actual_move1, actual_move2)]
@@ -80,18 +84,18 @@ def run_tournament(strategies: list[BaseStrategy], rounds_per_game: int, avg_mat
         #    雙方的 "my_history" (情緒) 和 "total_score" 被即時更新
         strategy1.update(
             opponent_unique_id=strategy2.unique_id,
-            my_intended_move=intended_move1,
+            my_intended_move=slipped_intent1,
             my_actual_move=actual_move1,
-            opponent_intended_move=intended_move2,
+            opponent_intended_move=slipped_intent2,
             opponent_actual_move=actual_move2,
             match_result=result1
         )
 
         strategy2.update(
             opponent_unique_id=strategy1.unique_id,
-            my_intended_move=intended_move2,
+            my_intended_move=slipped_intent2,
             my_actual_move=actual_move2,
-            opponent_intended_move=intended_move1,
+            opponent_intended_move=slipped_intent1,
             opponent_actual_move=actual_move1,
             match_result=result2
         )
