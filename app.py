@@ -52,7 +52,7 @@ if __name__ == "__main__":
     KILL_AND_REPRODUCE_COUNT = 5
     ROUNDS_PER_GAME = 200
     AVG_MATCHES_PER_STRATEGY = 100
-    STABILITY_THRESHOLD = 10
+    STABILITY_THRESHOLD = 100
 
     # 預設 5% 雜訊。若要執行無雜訊, 請手動改為 0.0
     NOISE = 0.05

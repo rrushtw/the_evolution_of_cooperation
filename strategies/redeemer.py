@@ -27,7 +27,11 @@ class Redeemer(BaseStrategy):
         # 結構: {'opponent_name': 1, ...}
         self.strike_counts = {}
 
-    def play(self, opponent_unique_id: str, opponent_history: list[dict]) -> Move:
+    def play(self,
+             opponent_unique_id: str,
+             opponent_history: list[dict],
+             opponent_total_score: int,
+             ) -> Move:
 
         # 1. 檢查這個對手是否已在我的 "黑名單" 上
         if opponent_unique_id in self.grudge_list:

@@ -31,12 +31,15 @@ class BaseStrategy(abc.ABC):
     @abc.abstractmethod
     def play(self,
              opponent_unique_id: str,
-             opponent_history: list[dict]
+             opponent_history: list[dict],
+             opponent_total_score: int,
              ) -> Move:
         """
         決定此回合 "打算" 出什麼招。
         Args:
             opponent_unique_id (str): 對手的 "個體" ID。
+            opponent_history (list[dict]): 對手過往遊戲紀錄
+            opponent_total_score (int): 對手當前總分
         """
         pass
 

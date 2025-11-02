@@ -56,18 +56,17 @@ def run_tournament(strategies: list[BaseStrategy], rounds_per_game: int, avg_mat
         # 隨機"不重複"地抽出 2 個個體
         strategy1, strategy2 = random.sample(strategies, 2)
 
-        # --- 核心邏輯 (play_game 已被內聯) ---
-        # 這是 s1 和 s2 之間的一 "次" 互動
-
-        # 1. & 2. 取得公開日誌 (抓取 "上一刻" 的情緒)
-        s1_public_log = strategy1.my_history
-        s2_public_log = strategy2.my_history
-
-        # 3. & 4. 取得雙方的 "意圖" 出招
+        # 取得雙方的 "意圖" 出招
         true_intent1 = strategy1.play(
-            opponent_unique_id=strategy2.unique_id, opponent_history=s2_public_log)
+            opponent_unique_id=strategy2.unique_id,
+            opponent_history=strategy2.my_history,
+            opponent_total_score=strategy2.total_score,
+        )
         true_intent2 = strategy2.play(
-            opponent_unique_id=strategy1.unique_id, opponent_history=s1_public_log)
+            opponent_unique_id=strategy1.unique_id,
+            opponent_history=strategy1.my_history,
+            opponent_total_score=strategy1.total_score,
+        )
 
         # 取得 "手滑後的意圖" (Slipped Intent)
         slipped_intent1 = strategy1.apply_internal_noise(true_intent1)

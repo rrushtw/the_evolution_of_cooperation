@@ -20,7 +20,8 @@ class Awkward(BaseStrategy):
 
     def play(self,
              opponent_unique_id: str,
-             opponent_history: list[dict]
+             opponent_history: list[dict],
+             opponent_total_score: int,
              ) -> Move:
 
         # 1. 我的 "真實意圖" 永遠是合作

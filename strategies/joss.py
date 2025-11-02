@@ -17,7 +17,11 @@ class Joss(BaseStrategy):
     # 10% 的偷襲機率
     P_SNEAKY = 0.1
 
-    def play(self, opponent_unique_id: str, opponent_history: list[dict]) -> Move:
+    def play(self,
+             opponent_unique_id: str,
+             opponent_history: list[dict],
+             opponent_total_score: int,
+             ) -> Move:
 
         private_history_list = self.opponent_history.get(opponent_unique_id, [])
 

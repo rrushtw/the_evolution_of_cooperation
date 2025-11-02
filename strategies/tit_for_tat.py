@@ -5,7 +5,11 @@ from definitions import Move
 class TitForTat(BaseStrategy):
     """以牙還牙 (TFT)"""
 
-    def play(self, opponent_unique_id: str, opponent_history: list[dict]) -> Move:
+    def play(self,
+             opponent_unique_id: str,
+             opponent_history: list[dict],
+             opponent_total_score: int,
+             ) -> Move:
         # 1. 取得 "私怨" 列表
         #    使用 .get(key, default) 更安全，避免 KeyError
         private_history_list = self.opponent_history.get(opponent_unique_id, [])

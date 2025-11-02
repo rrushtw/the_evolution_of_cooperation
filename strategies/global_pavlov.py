@@ -20,7 +20,11 @@ class GlobalPavlov(BaseStrategy):
     (此策略 "忽略" 傳入的 opponent_unique_id 和 opponent_history)
     """
 
-    def play(self, opponent_unique_id: str, opponent_history: list[dict]) -> Move:
+    def play(self,
+             opponent_unique_id: str,
+             opponent_history: list[dict],
+             opponent_total_score: int,
+             ) -> Move:
 
         # 1. 檢查 "全局歷史"
         if not self.my_history:

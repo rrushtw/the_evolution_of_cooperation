@@ -29,7 +29,8 @@ class LimitedPunisher(BaseStrategy):
 
     def play(self,
              opponent_unique_id: str,
-             opponent_history: list[dict]
+             opponent_history: list[dict],
+             opponent_total_score: int,
              ) -> Move:
 
         # 1. 檢查是否處於 "懲罰" 階段

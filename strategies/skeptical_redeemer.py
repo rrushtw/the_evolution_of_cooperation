@@ -25,7 +25,8 @@ class SkepticalRedeemer(BaseStrategy):
 
     def play(self,
              opponent_unique_id: str,
-             opponent_history: list[dict]
+             opponent_history: list[dict],
+             opponent_total_score: int,
              ) -> Move:
 
         if opponent_unique_id in self.grudge_list:

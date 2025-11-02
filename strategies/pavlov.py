@@ -16,7 +16,11 @@ class Pavlov(BaseStrategy):
     (此策略只看 "私怨"，忽略傳入的 opponent_history)
     """
 
-    def play(self, opponent_unique_id: str, opponent_history: list[dict]) -> Move:
+    def play(self,
+             opponent_unique_id: str,
+             opponent_history: list[dict],
+             opponent_total_score: int,
+             ) -> Move:
 
         # 1. 取得 "私怨" 列表
         private_history_list = self.opponent_history.get(opponent_unique_id, [])
