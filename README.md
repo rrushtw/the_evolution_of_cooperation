@@ -35,6 +35,15 @@
     * 這模擬「**環境干擾**」或「**誤解**」（例如訊號不良）。
     * **關鍵：** `engine` *不會*將此雜訊告知 `update` 函式。「看意圖」的策略（如 `Forgiving...`）**可以**看穿這種雜訊，從而原諒「意外」。
 
+## 策略的雙重記憶系統
+
+本專案的 `BaseStrategy` 具有一個獨特的雙重記憶系統：
+
+1.  **私有記憶 (`self.opponent_history`)**: 策略與特定對手的「私怨」（使用 `unique_id` 區分）。
+2.  **公開日誌 (`self.my_history`)**: 策略的「全局歷史」（用於「遷怒」）。
+
+在 `play` 時，`engine` 會將對手的「公開日誌」(`opponent_history`) 傳遞給策略，使其可以同時分析「私怨」和「公評」來做出決策。
+
 ## 專案結構
 ```
 project/
@@ -89,11 +98,56 @@ project/
 
 `app.py` 會自動從 `strategies/` 目錄載入所有策略，並執行**一次**演化模擬（預設 5% 雜訊）。
 
-## 策略的雙重記憶系統
+## 🐳 如何執行 (Docker 7x24 模擬)
 
-本專案的 `BaseStrategy` 具有一個獨特的雙重記憶系統：
+此專案已打包成 Docker 服務，使其可以在任何支援 Docker 的機器（例如您的測試伺服器）上 7x24 持續運行、監控策略、並匯出統計結果。
 
-1.  **私有記憶 (`self.opponent_history`)**: 策略與特定對手的「私怨」（使用 `unique_id` 區分）。
-2.  **公開日誌 (`self.my_history`)**: 策略的「全局歷史」（用於「遷怒」）。
+### 先決條件
 
-在 `play` 時，`engine` 會將對手的「公開日誌」(`opponent_history`) 傳遞給策略，使其可以同時分析「私怨」和「公評」來做出決策。
+* 已安裝 [Docker Engine](https://docs.docker.com/engine/install/)
+
+### 快速啟動 (前景執行)
+
+1.  **建立 `output` 資料夾**：
+    ```bash
+    mkdir -p output
+    ```
+
+2.  **建置並啟動服務**：
+    此命令會自動建置映像檔，並以「前景模式」啟動服務。您會在終端機中即時看到所有日誌 (`print` 訊息)：
+
+    ```bash
+    docker-compose up --build
+    ```
+
+3.  **停止服務**：
+    在終端機中按下 `Ctrl + C`。
+
+---
+
+### 伺服器部署 (背景執行)
+
+1.  **啟動 (背景模式)**：
+    使用 `-d` (detached) 參數在背景啟動服務。
+    ```bash
+    docker-compose up --build -d
+    ```
+
+2.  **查看日誌**：
+    使用 `-f` (follow) 來即時追蹤日誌 (按下 `Ctrl + C` 退出追蹤，服務會繼續在背景運行)：
+    ```bash
+    docker-compose logs -f
+    ```
+
+3.  **停止服務**：
+    ```bash
+    docker-compose down
+    ```
+
+### 工作流程：動態調整與查看結果
+
+這個 Docker 服務的核心優勢是使用了 `volumes` (掛載)：
+
+* **查看結果**: 容器會持續將 `ranking_..._noise_...pct.json` 檔案寫入 `/app/output`。由於已掛載，這些 JSON 檔案會**即時**出現在您本地的 `./output` 資料夾中，供您分析。
+* **調整策略**: 您**不需要**停止服務。您可以直接在本地的 `./strategies` 資料夾中新增、刪除或修改策略的 `.py` 檔案。`app.py` 會在**下一輪**模擬開始時自動重新載入該目錄，並使用您更新後的策略組合。
+* **調整參數**: 您可以在 `docker-compose.yml` 檔案中修改 `environment` 區塊的參數 (例如 `NOISE=0.01`)。修改完成後，只需執行 `docker-compose up -d --no-deps` 即可讓容器使用新參數重啟。

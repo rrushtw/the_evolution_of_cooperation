@@ -1,0 +1,23 @@
+services:
+  simulator:
+    build: # 使用當前目錄的 Dockerfile
+      context: .
+      dockerfile: Dockerfile
+    container_name: evolution_simulator
+    restart: on-failure:5 # 如果失敗 (例如 Python 腳本崩潰)，最多重試 5 次
+    volumes:
+      # 1. 掛載策略資料夾 (您可以在本地修改/新增/刪除 .py，容器會即時讀取)
+      - ./strategies:/app/strategies
+      # 2. 掛載結果資料夾 (容器內產生的 JSON 會出現在您本地的 ./output)
+      - ./output:/app/output
+    environment:
+      # --- 模擬參數 (可在此調整，app.py 會讀取) ---
+      # 預設 5% 雜訊。
+      - NOISE=0.05
+      - INITIAL_COPIES_PER_TYPE=6
+      - KILL_AND_REPRODUCE_COUNT=5
+      - ROUNDS_PER_GAME=200
+      - AVG_MATCHES_PER_STRATEGY=100
+      - STABILITY_THRESHOLD=100
+      # 確保 Python 輸出不被緩存，即時看到日誌
+      - PYTHONUNBUFFERED=1

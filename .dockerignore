@@ -1,0 +1,20 @@
+# Docker 相關檔案
+Dockerfile
+docker-compose.yml
+
+# Git/VSCode/Devcontainer (不需要放進映像檔)
+.git
+.gitignore
+.devcontainer
+.vscode
+
+# Python 緩存與虛擬環境
+pycache/
+*.py[cod]
+.venv
+venv/
+
+# 本地的輸出結果 (容器內會自己產生)
+output/
+logs/
+*.log
