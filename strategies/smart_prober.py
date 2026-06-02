@@ -32,6 +32,8 @@ class SmartProber(BaseStrategy):
         self.responsive_list = set()
         # 狀態 2: "可剝削者" (永遠背叛)
         self.exploitable_list = set()
+        # 增量掃描位置：剝削期監視對手是否「醒來」，避免每回合重掃 (O(n²) → 攤銷 O(1))
+        self._exploit_scan_pos: dict[str, int] = {}
 
     def play(self,
              opponent_unique_id: str,
@@ -88,19 +90,19 @@ class SmartProber(BaseStrategy):
         """
         # 5. 【關鍵】重新評估
         # 檢查 "剝削" 期間，對手是否 "曾經" 反抗過
-
         # (我們只檢查 R4 之後的歷史, 因為 R4 之前我們是 C)
-        relevant_history = history[self.PROBE_ROUND:]
-
-        for record in relevant_history:
-            if record["opponent_actual_move"] == Move.CHEAT:
+        # 增量掃描：從上次掃到的位置續掃，每筆只看一次，行為與「全掃」等價。
+        start = self._exploit_scan_pos.get(opp_id, self.PROBE_ROUND)
+        for i in range(start, len(history)):
+            if history[i]["opponent_actual_move"] == Move.CHEAT:
                 # 找到了！他醒了！(例如 TolerantGrudger 在 3 次後醒了)
-                # print(f"DEBUG: SmartProber 發現 {opp_id} 醒了!")
+                self._exploit_scan_pos.pop(opp_id, None)
                 self.exploitable_list.remove(opp_id)
                 self.responsive_list.add(opp_id)
                 return self._play_generous_tft(history)  # 切換到 GTFT
 
-        # 如果還沒醒，繼續剝削
+        # 如果還沒醒，記住掃描進度，繼續剝削
+        self._exploit_scan_pos[opp_id] = len(history)
         return Move.CHEAT
 
     def _play_generous_tft(self, history):
@@ -123,3 +125,4 @@ class SmartProber(BaseStrategy):
         super().reset()
         self.responsive_list = set()
         self.exploitable_list = set()
+        self._exploit_scan_pos = {}
