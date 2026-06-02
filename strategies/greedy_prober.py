@@ -25,6 +25,8 @@ class GreedyProber(BaseStrategy):
         super().__init__()
         self.responsive_list = set()
         self.exploitable_list = set()
+        # 增量掃描位置：剝削期監視對手是否「醒來」，避免每回合重掃 (O(n²) → 攤銷 O(1))
+        self._exploit_scan_pos: dict[str, int] = {}
 
     def play(self,
              opponent_unique_id: str,
@@ -71,15 +73,17 @@ class GreedyProber(BaseStrategy):
         扮演剝削者 (永遠 D)，但持續監視
         (同 SmartProber)
         """
-        relevant_history = history[self.PROBE_ROUND:]
-
-        for record in relevant_history:
-            if record["opponent_actual_move"] == Move.CHEAT:
+        # 增量掃描：從上次掃到的位置續掃，每筆只看一次，行為與「全掃」等價。
+        start = self._exploit_scan_pos.get(opp_id, self.PROBE_ROUND)
+        for i in range(start, len(history)):
+            if history[i]["opponent_actual_move"] == Move.CHEAT:
                 # 醒了！
+                self._exploit_scan_pos.pop(opp_id, None)
                 self.exploitable_list.remove(opp_id)
                 self.responsive_list.add(opp_id)
                 return self._play_joss_tft(history)  # 切換到 JOSS+TFT
 
+        self._exploit_scan_pos[opp_id] = len(history)
         return Move.CHEAT
 
     def _play_joss_tft(self, history):
@@ -111,3 +115,4 @@ class GreedyProber(BaseStrategy):
         super().reset()
         self.responsive_list = set()
         self.exploitable_list = set()
+        self._exploit_scan_pos = {}

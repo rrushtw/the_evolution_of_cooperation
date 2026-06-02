@@ -44,6 +44,35 @@
 
 在 `play` 時，`engine` 會將對手的「公開日誌」(`opponent_history`) 傳遞給策略，使其可以同時分析「私怨」和「公評」來做出決策。
 
+## ⚡ 效能 (Performance)
+
+### 量測工具：`benchmark.py`
+
+在「固定 seed + 固定工作量」下計時 `engine.run_tournament()`，輸出「互動數/秒」與總分 checksum，可在不同 runtime / 改動前後做 apples-to-apples 比較：
+
+```bash
+# 容器內執行 (TQDM_DISABLE=1 關閉進度條以免洗版)
+docker run --rm -e TQDM_DISABLE=1 -v "$(pwd)/strategies:/app/strategies" <image> python -u benchmark.py
+```
+
+可用環境變數覆寫工作量：`BENCH_COPIES`、`BENCH_ROUNDS`、`BENCH_MATCHES`、`BENCH_NOISE`、`BENCH_SEED`。
+相同 seed 下 checksum 應可重現——這是驗證「優化是否改變行為」的硬指標。
+
+### 已知瓶頸與修正：O(n²) 全歷史掃描
+
+`engine` 會把對手的**全局歷史** (`my_history`，會長到每個體上萬筆) 當作 `opponent_history` 傳進 `play()`。少數策略 (`SmartEnvious`、`SmartProber`、`GreedyProber`) 原本**每回合都整段重掃**這份歷史，使單場 tournament 退化成 O(n²)，速率會從 ~200k/s 一路衰減到 ~27k/s。
+
+修正方式：為這些策略加上**增量掃描位置 / 累計計數器**，每筆紀錄只看一次（攤銷 O(1)），行為與原本的全掃**完全等價**（相同 seed 下 checksum 不變）。
+
+| 設定 (23 策略, seed=42) | 互動/秒 | 單場 wall-time |
+|---|---|---|
+| 修正前 | 5,839/s | 236 s |
+| **修正後** | **127,511/s** | **10.8 s** |
+
+加速約 **22×**，checksum 維持 `6699927` 不變。
+
+> **附註：PyPy 已評估並否決。** 本 workload 為 dict/set/Enum 配置密集型，非 PyPy 擅長的數值熱迴圈。實測 PyPy 在每種設定下都比 CPython 慢 (-5% 到 -2.3×)，故不採用。
+
 ## 專案結構
 ```
 project/
