@@ -26,6 +26,7 @@
 import os
 import sys
 import io
+import math
 import collections
 import contextlib
 import random
@@ -101,57 +102,96 @@ def main():
         results = pool.map(one_run, list(range(1, RUNS + 1)))
 
     n = len(results)
-    agg = {name: {
-        "survive": 0, "share_sum": 0.0, "extinct": 0,
-        "ext_gen_sum": 0, "rank_sum": 0,
-    } for name in all_names}
+    Z = 1.96  # 95% 常態近似
+
+    # 收集每個策略「逐 run」的樣本，才能算變異數 / 信賴區間
+    # （單跑一次只是一個樣本；N 個獨立 seed 才能給出有誤差棒的 concrete conclusion）
+    shares = {name: [] for name in all_names}    # 每 run 的最終佔比（該 run 滅絕計 0）
+    survived = {name: [] for name in all_names}  # 每 run 是否存活 (1/0)
+    ext_gens = {name: [] for name in all_names}  # 滅絕世代（僅滅絕的 run）
+    ranks = {name: [] for name in all_names}     # 每 run 的最終名次
 
     for r in results:
         total = sum(r["final_counts"].values()) or 1
         for name in all_names:
             cnt = r["final_counts"].get(name, 0)
-            if cnt > 0:
-                agg[name]["survive"] += 1
-                agg[name]["share_sum"] += cnt / total
+            shares[name].append(cnt / total)
+            survived[name].append(1 if cnt > 0 else 0)
         for gen, name in r["extinction"]:
-            agg[name]["extinct"] += 1
-            agg[name]["ext_gen_sum"] += gen
+            ext_gens[name].append(gen)
         for rank, name in enumerate(r["ranking"], start=1):
-            agg[name]["rank_sum"] += rank
+            ranks[name].append(rank)
+
+    def mean(xs):
+        return sum(xs) / len(xs) if xs else 0.0
+
+    def stdev(xs):
+        if len(xs) < 2:
+            return 0.0
+        m = mean(xs)
+        return math.sqrt(sum((x - m) ** 2 for x in xs) / (len(xs) - 1))
+
+    def mean_ci_radius(xs):
+        """平均值的 95% 信賴半徑（常態近似 Z·s/√n）。"""
+        return Z * stdev(xs) / math.sqrt(len(xs)) if len(xs) > 1 else 0.0
+
+    def wilson_ci(k, total):
+        """比例的 Wilson 95% 信賴區間 (lo, hi)，小樣本/極端比例比常態更穩。"""
+        if total == 0:
+            return 0.0, 0.0
+        p = k / total
+        denom = 1 + Z * Z / total
+        center = (p + Z * Z / (2 * total)) / denom
+        margin = Z * math.sqrt(p * (1 - p) / total + Z * Z / (4 * total * total)) / denom
+        return max(0.0, center - margin), min(1.0, center + margin)
 
     rows = []
     for name in all_names:
-        a = agg[name]
+        surv_k = sum(survived[name])
+        surv_lo, surv_hi = wilson_ci(surv_k, n)
         rows.append({
             "name": name,
-            "survival_rate": a["survive"] / n,
-            "avg_share": a["share_sum"] / n,
-            "extinct_rate": a["extinct"] / n,
-            "mean_ext_gen": (a["ext_gen_sum"] / a["extinct"]) if a["extinct"] else None,
-            "mean_rank": a["rank_sum"] / n,
+            "survival_rate": surv_k / n,
+            "surv_lo": surv_lo,
+            "surv_hi": surv_hi,
+            "avg_share": mean(shares[name]),
+            "share_ci": mean_ci_radius(shares[name]),
+            "extinct_rate": len(ext_gens[name]) / n,
+            "mean_ext_gen": mean(ext_gens[name]) if ext_gens[name] else None,
+            "mean_rank": mean(ranks[name]) if ranks[name] else None,
         })
 
     # 依 (存活率↓, 平均佔比↓, 平均名次↑) 排序
-    rows.sort(key=lambda x: (-x["survival_rate"], -x["avg_share"], x["mean_rank"]))
+    rows.sort(key=lambda x: (-x["survival_rate"], -x["avg_share"], x["mean_rank"] or 0))
 
-    avg_gen = sum(r["generations"] for r in results) / n
-    print(f"\n平均每 run 跑了 {avg_gen:.0f} 世代\n")
-    print(f"  {'#':>2} {'策略':<22} {'存活率':>7} {'平均佔比':>9} {'滅絕率':>7} "
+    avg_gen = mean([r["generations"] for r in results])
+    print(f"\nN={n} 獨立演化（seeds 1..{n}），平均每 run 跑了 {avg_gen:.0f} 世代；誤差為 95% CI\n")
+    print(f"  {'#':>2} {'策略':<20} {'存活率 (95%CI)':>22} {'平均佔比 (95%CI)':>20} "
           f"{'平均滅絕世代':>12} {'平均名次':>9}")
-    print("  " + "-" * 80)
+    print("  " + "-" * 92)
     for i, r in enumerate(rows, 1):
         ext_gen = f"{r['mean_ext_gen']:.0f}" if r["mean_ext_gen"] is not None else "—"
-        print(f"  {i:>2} {r['name']:<22} {r['survival_rate']:>6.0%} "
-              f"{r['avg_share']:>8.1%} {r['extinct_rate']:>6.0%} "
-              f"{ext_gen:>12} {r['mean_rank']:>9.1f}")
+        rank = f"{r['mean_rank']:.1f}" if r["mean_rank"] is not None else "—"
+        surv = f"{r['survival_rate']:.0%} [{r['surv_lo']:.0%},{r['surv_hi']:.0%}]"
+        share = f"{r['avg_share']:.1%} ±{r['share_ci']:.1%}"
+        print(f"  {i:>2} {r['name']:<20} {surv:>22} {share:>20} "
+              f"{ext_gen:>12} {rank:>9}")
 
-    # 標記長期墊底（存活率低 且 滅絕率高）
-    chronic = [r for r in rows if r["survival_rate"] <= 0.2 and r["extinct_rate"] >= 0.6]
-    print(f"\n■ 長期墊底候選（存活率 ≤20% 且 滅絕率 ≥60%）：{len(chronic)} 個")
-    for r in chronic:
-        eg = f"{r['mean_ext_gen']:.0f}" if r["mean_ext_gen"] is not None else "—"
-        print(f"  - {r['name']:<22} 存活率 {r['survival_rate']:.0%}, "
-              f"滅絕率 {r['extinct_rate']:.0%}, 平均滅絕世代 {eg}")
+    # 具體結論（用信賴區間判定，而非單點）：
+    #   穩健優勢者 = 平均佔比 95% CI 下界仍 > 5%
+    #   穩健滅絕者 = 存活率 95% CI 上界 < 5%
+    dominant = [r for r in rows if r["avg_share"] - r["share_ci"] > 0.05]
+    robust_extinct = [r for r in rows if r["surv_hi"] < 0.05]
+    print(f"\n■ 穩健優勢者（平均佔比 95% CI 下界 > 5%）：{len(dominant)} 個")
+    for r in dominant:
+        lo = max(0.0, r["avg_share"] - r["share_ci"])
+        print(f"  - {r['name']:<20} 平均佔比 {r['avg_share']:.1%} (95% CI ≥ {lo:.1%}), "
+              f"存活率 {r['survival_rate']:.0%} [{r['surv_lo']:.0%},{r['surv_hi']:.0%}]")
+    print(f"\n■ 穩健滅絕者（存活率 95% CI 上界 < 5%）：{len(robust_extinct)} 個")
+    if robust_extinct:
+        print("  " + "、".join(r["name"] for r in robust_extinct))
+    else:
+        print("  （無——樣本數不足以把任一策略的存活率上界壓到 5% 以下，請增大 SURV_RUNS）")
 
 
 if __name__ == "__main__":
