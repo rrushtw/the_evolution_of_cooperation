@@ -23,43 +23,48 @@
 - 限制：1v1 量測，**看不到跨對手耦合**（如 GlobalPavlov 的遷怒），也觸發不了只對特定對手才顯現的條件邏輯（嫉妒/救贖/拉黑）。
 
 **存活率（生態背景）— `survival.py`**
-- 看什麼：真實多人演化跑 40 runs × 100 世代，統計存活/滅絕。
+- 看什麼：真實多人演化跑 N=100 獨立演化 × 100 世代，統計存活/滅絕並輸出 95% 信賴區間。
 - 限制：結果隨選擇壓力變動；本生態趨向「贏家通吃」，**滅絕≠冗餘**。
 
 ---
 
 ## 一、存活率研究（生態背景，21 策略）
 
-40 runs × 100 世代，`rounds=80 matches=50 noise=5% kill=5`，初始每種 6 個體。平均每 run 跑滿 100 世代（Awkward+Joss 穩定共存，族群從不縮到 ≤1 種）。
+**N=100 獨立演化**（seeds 1..100），`rounds=80 matches=50 noise=5% kill=5`，初始每種 6 個體，每 run 跑滿 100 世代。誤差為 **95% 信賴區間**（存活率用 Wilson、平均佔比用 mean ± Z·s/√n）——單跑一次只是一個樣本，N=100 才能給出有誤差棒的結論。
 
-| # | 策略 | 存活率 | 平均佔比 | 滅絕率 | 平均滅絕世代 | 平均名次 |
-|---|---|---|---|---|---|---|
-| 1 | **Awkward** | 100% | 66.7% | 0% | — | 1.0 |
-| 2 | **Joss** | 100% | 31.7% | 0% | — | 2.1 |
-| 3 | GenerousTitForTat | 2% | 0.9% | 98% | 68 | 3.1 |
-| 4 | ChaoticRedeemer | 2% | 0.6% | 98% | 17 | 13.1 |
-| 5 | TolerantGrudger | 2% | 0.1% | 98% | 46 | 5.5 |
-| 6 | TitForTat | 2% | 0.0% | 98% | 55 | 4.1 |
-| 7 | Redeemer | 2% | 0.0% | 98% | 44 | 6.6 |
-| 8 | TitForTwoTats | 0% | — | 100% | 42 | 7.3 |
-| 9 | LimitedPunisher | 0% | — | 100% | 39 | 8.6 |
-| 10 | SkepticalRedeemer | 0% | — | 100% | 38 | 8.9 |
-| 11 | Statistical | 0% | — | 100% | 37 | 9.5 |
-| 12 | SmartProber | 0% | — | 100% | 29 | 11.8 |
-| 13 | AlwaysCooperate | 0% | — | 100% | 28 | 12.2 |
-| 14 | SmartEnvious | 0% | — | 100% | 19 | 12.9 |
-| 15 | Grudger | 0% | — | 100% | 13 | 14.8 |
-| 16 | Random | 0% | — | 100% | 11 | 16.5 |
-| 17 | StochasticPavlov | 0% | — | 100% | 10 | 17.1 |
-| 18 | GlobalPavlov | 0% | — | 100% | 11 | 17.2 |
-| 19 | Pavlov | 0% | — | 100% | 10 | 18.3 |
-| 20 | AlwaysCheat | 0% | — | 100% | 8 | 19.6 |
-| 21 | Bully | 0% | — | 100% | 4 | 20.9 |
+| # | 策略 | 存活率 (95% CI) | 平均佔比 (95% CI) | 平均滅絕世代 | 平均名次 |
+|---|---|---|---|---|---|
+| 1 | **Awkward** | 100% [96%,100%] | **67.2% ±0.7%** | — | 1.0 |
+| 2 | **Joss** | 100% [96%,100%] | **32.1% ±0.7%** | — | 2.0 |
+| 3 | GenerousTitForTat | 2% [1%,7%] | 0.4% ±0.7% | 70 | 3.1 |
+| 4 | ChaoticRedeemer | 1% [0%,5%] | 0.2% ±0.4% | 17 | 13.3 |
+| 5 | TolerantGrudger | 1% [0%,5%] | 0.0% ±0.1% | 46 | 5.6 |
+| 6 | TitForTat | 1% [0%,5%] | 0.0% | 56 | 4.1 |
+| 7 | Redeemer | 1% [0%,5%] | 0.0% | 44 | 6.6 |
+| 8 | TitForTwoTats | 0% [0%,4%] | 0.0% | 41 | 7.5 |
+| 9 | LimitedPunisher | 0% [0%,4%] | 0.0% | 39 | 8.7 |
+| 10 | SkepticalRedeemer | 0% [0%,4%] | 0.0% | 38 | 9.0 |
+| 11 | Statistical | 0% [0%,4%] | 0.0% | 38 | 9.0 |
+| 12 | SmartProber | 0% [0%,4%] | 0.0% | 28 | 11.7 |
+| 13 | AlwaysCooperate | 0% [0%,4%] | 0.0% | 27 | 12.2 |
+| 14 | SmartEnvious | 0% [0%,4%] | 0.0% | 20 | 12.8 |
+| 15 | Grudger | 0% [0%,4%] | 0.0% | 13 | 14.8 |
+| 16 | Random | 0% [0%,4%] | 0.0% | 11 | 16.4 |
+| 17 | StochasticPavlov | 0% [0%,4%] | 0.0% | 10 | 17.2 |
+| 18 | GlobalPavlov | 0% [0%,4%] | 0.0% | 11 | 17.2 |
+| 19 | Pavlov | 0% [0%,4%] | 0.0% | 10 | 18.3 |
+| 20 | AlwaysCheat | 0% [0%,4%] | 0.0% | 9 | 19.6 |
+| 21 | Bully | 0% [0%,4%] | 0.0% | 4 | 20.9 |
+
+**具體結論（用信賴區間判定，非單點）：**
+- **🏆 穩健優勢者（2）**：`Awkward`（佔比 67.2%，95% CI 下界 ≥ 66.5%）、`Joss`（32.1%，下界 ≥ 31.4%）——兩者 100% 存活、合計 ~99% 佔比，且 CI 極窄，結論非常確定。
+- **💀 穩健滅絕者（14）**：存活率 95% CI 上界 < 5%——`TitForTwoTats`、`LimitedPunisher`、`SkepticalRedeemer`、`Statistical`、`SmartProber`、`AlwaysCooperate`、`SmartEnvious`、`Grudger`、`Random`、`StochasticPavlov`、`GlobalPavlov`、`Pavlov`、`AlwaysCheat`、`Bully`。
+- **❓ 邊界（5）**：`GenerousTitForTat`、`ChaoticRedeemer`、`TolerantGrudger`、`TitForTat`、`Redeemer`——存活率 CI 上界 5–7%，偶爾僥倖在某些 run 殘存，但仍極弱。
 
 **解讀：**
-- **Awkward + Joss 通吃**（合計佔比 ~98%）。兩者本質都是「大多合作、約 10% 偷背叛、不記仇」。
+- **Awkward + Joss 通吃**（合計佔比 ~99%）。兩者本質都是「大多合作、約 10% 偷背叛、不記仇」。
 - 高雜訊環境（外部 5% + 內部 2% + Awkward 自帶 10% 手滑）下，**會報復的策略（TFT/Grudger 家族）被雜訊拖進互相懲罰而自我毀滅**，不報復的寬容者勝出——噪音 IPD 的已知結論。
-- ⚠️「滅絕率高」**不等於**「該刪」——TFT 等是因生態被 Awkward 主宰而落敗，非本身冗餘。這份榜單是**背景**，不是刪除清單。
+- ⚠️「滅絕」**不等於**「該刪」——TFT 等是因生態被 Awkward 主宰而落敗，非本身冗餘。這份榜單是**背景**，不是刪除清單。
 
 ---
 
@@ -140,8 +145,9 @@ TolerantGrudger       0.92   0.10   0.92   0.18   0.24
 # 行為指紋（數十秒）
 docker run --rm -e TQDM_DISABLE=1 -v "$(pwd):/app" <image> python -u -m tools.fingerprint
 
-# 存活率研究（多核平行；可用 SURV_* 環境變數調整規模，建議 SURV_WORKERS=核心數）
-docker run --rm -e TQDM_DISABLE=1 -e SURV_WORKERS=20 -v "$(pwd):/app" <image> python -u -m tools.survival
+# 存活率研究（多核平行 + 95% CI；本報告用 N=100，工具預設 SURV_RUNS=40）
+docker run --rm -e TQDM_DISABLE=1 -e SURV_RUNS=100 -e SURV_WORKERS=20 -v "$(pwd):/app" <image> python -u -m tools.survival
 ```
 
-> 本次 21 策略數據於遠端 20 核測試機重產（`SURV_WORKERS=20`，固定 seed）。拜 Phase 1 的 22× 加速所賜，40 runs × 100 世代得以在數分鐘內跑完。
+> 本報告的存活率數據於遠端 20 核測試機以 **N=100 獨立演化**（seeds 1..100，固定可重現）重產，工具直接輸出每策略的 95% 信賴區間與「穩健優勢/穩健滅絕」結論。
+> 為何用 N=100 而非 40：用 Wilson CI 算，0/40 存活者的存活率 95% CI 上界仍 ~8.8%（無法宣稱「穩健滅絕」）；N=100 可壓到 ~3.7%（<5%），故 14 個策略得以**有信賴區間地**判定為穩健滅絕。
