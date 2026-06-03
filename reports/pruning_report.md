@@ -1,6 +1,6 @@
 # 策略瘦身分析報告
 
-> 初版日期：2026-06-02 · 更新：2026-06-03（依機制多樣性原則收斂，並**實際執行刪除**）
+> 初版日期：2026-06-02 · 更新：2026-06-03（依機制多樣性原則收斂並**實際刪除**；**修正 survival 參數失真**，改為忠實重用正式 app 演化、N=50 跑到穩定）
 > 分析工具：`tools/fingerprint.py`、`tools/survival.py`（數據於遠端 20 核測試機重產，固定 seed 可重現）
 
 ## TL;DR
@@ -22,49 +22,47 @@
 - 看什麼：對固定 panel（AllC/AllD/TFT/Grudger/Random）的「合作率＋得分」向量，多 seed 平均（雜訊 5%）。
 - 限制：1v1 量測，**看不到跨對手耦合**（如 GlobalPavlov 的遷怒），也觸發不了只對特定對手才顯現的條件邏輯（嫉妒/救贖/拉黑）。
 
-**存活率（生態背景）— `survival.py`**
-- 看什麼：真實多人演化跑 N=100 獨立演化 × 100 世代，統計存活/滅絕並輸出 95% 信賴區間。
-- 限制：結果隨選擇壓力變動；本生態趨向「贏家通吃」，**滅絕≠冗餘**。
+**勝率（生態背景）— `survival.py`**
+- 看什麼：**直接重用正式 app 的演化迴圈**（`simulation.run_evolution_simulation`，`rounds=200 matches=100 noise=5% kill=5`、跑到 `stability=100` 連續穩定），跑 N=50 個 seed，統計每個策略的**奪冠頻率**（Wilson 95% CI）、top-3/top-5 入榜率、平均名次。
+- 限制：結果隨選擇壓力變動；**奪冠≠不可刪、墊底≠該刪**（去重看指紋，不看生態）。
 
 ---
 
-## 一、存活率研究（生態背景，21 策略）
+## 一、勝率研究（生態背景，21 策略）
 
-**N=100 獨立演化**（seeds 1..100），`rounds=80 matches=50 noise=5% kill=5`，初始每種 6 個體，每 run 跑滿 100 世代。誤差為 **95% 信賴區間**（存活率用 Wilson、平均佔比用 mean ± Z·s/√n）——單跑一次只是一個樣本，N=100 才能給出有誤差棒的結論。
+> ⚠️ **修正紀錄（2026-06-03）**：本節初版用了一個**自行重寫的縮水演化迴圈**（`rounds=80 matches=50`、封頂 100 代），與正式 app（`rounds=200 matches=100`、跑到穩定）規模差 5 倍且沒跑到均衡，得出「Awkward+Joss 通吃、報復者自滅」的**失真結論**——那只是「早期剝削暫態」的假象。現已把 `survival.py` 改成**直接重用正式 app 的 `simulation.run_evolution_simulation`**，工具與 app 永不再分岔。以下為更正後結果。
 
-| # | 策略 | 存活率 (95% CI) | 平均佔比 (95% CI) | 平均滅絕世代 | 平均名次 |
+**N=50 次完整演化**（seeds 1..50，每次**跑到穩定**），參數＝正式 app 預設（`rounds=200 matches=100 noise=5% kill=5 stability=100`，初始每種 6 個體）。記錄每次的**奪冠者**與最終名次；奪冠率附 Wilson 95% CI。遠端 20 核跑了 ~4.4 小時。
+
+| 策略 | 奪冠 | 奪冠率 (95% CI) | top-3 | top-5 | 平均名次 |
 |---|---|---|---|---|---|
-| 1 | **Awkward** | 100% [96%,100%] | **67.2% ±0.7%** | — | 1.0 |
-| 2 | **Joss** | 100% [96%,100%] | **32.1% ±0.7%** | — | 2.0 |
-| 3 | GenerousTitForTat | 2% [1%,7%] | 0.4% ±0.7% | 70 | 3.1 |
-| 4 | ChaoticRedeemer | 1% [0%,5%] | 0.2% ±0.4% | 17 | 13.3 |
-| 5 | TolerantGrudger | 1% [0%,5%] | 0.0% ±0.1% | 46 | 5.6 |
-| 6 | TitForTat | 1% [0%,5%] | 0.0% | 56 | 4.1 |
-| 7 | Redeemer | 1% [0%,5%] | 0.0% | 44 | 6.6 |
-| 8 | TitForTwoTats | 0% [0%,4%] | 0.0% | 41 | 7.5 |
-| 9 | LimitedPunisher | 0% [0%,4%] | 0.0% | 39 | 8.7 |
-| 10 | SkepticalRedeemer | 0% [0%,4%] | 0.0% | 38 | 9.0 |
-| 11 | Statistical | 0% [0%,4%] | 0.0% | 38 | 9.0 |
-| 12 | SmartProber | 0% [0%,4%] | 0.0% | 28 | 11.7 |
-| 13 | AlwaysCooperate | 0% [0%,4%] | 0.0% | 27 | 12.2 |
-| 14 | SmartEnvious | 0% [0%,4%] | 0.0% | 20 | 12.8 |
-| 15 | Grudger | 0% [0%,4%] | 0.0% | 13 | 14.8 |
-| 16 | Random | 0% [0%,4%] | 0.0% | 11 | 16.4 |
-| 17 | StochasticPavlov | 0% [0%,4%] | 0.0% | 10 | 17.2 |
-| 18 | GlobalPavlov | 0% [0%,4%] | 0.0% | 11 | 17.2 |
-| 19 | Pavlov | 0% [0%,4%] | 0.0% | 10 | 18.3 |
-| 20 | AlwaysCheat | 0% [0%,4%] | 0.0% | 9 | 19.6 |
-| 21 | Bully | 0% [0%,4%] | 0.0% | 4 | 20.9 |
+| **GenerousTitForTat** | 39/50 | **78% [65%,87%]** | 96% | 96% | **1.5** |
+| **SkepticalRedeemer** | 5/50 | 10% [4%,21%] | 66% | 96% | 3.1 |
+| **TitForTwoTats** | 3/50 | 6% [2%,16%] | 36% | 90% | 3.9 |
+| SmartProber | 2/50 | 4% [1%,13%] | 56% | 84% | 3.5 |
+| Awkward | 1/50 | 2% [0%,10%] | 2% | 4% | 10.5 |
+| LimitedPunisher | 0/50 | 0% [0%,7%] | 12% | 62% | 5.1 |
+| AlwaysCooperate | 0/50 | 0% [0%,7%] | 24% | 56% | 5.0 |
+| TitForTat | 0/50 | 0% [0%,7%] | 6% | 8% | 7.1 |
+| TolerantGrudger | 0/50 | 0% [0%,7%] | 2% | 4% | 8.5 |
+| Statistical | 0/50 | 0% [0%,7%] | 0% | 0% | 7.9 |
+| Redeemer | 0/50 | 0% [0%,7%] | 0% | 0% | 9.8 |
+| SmartEnvious | 0/50 | 0% [0%,7%] | 0% | 0% | 12.4 |
+| Joss | 0/50 | 0% [0%,7%] | 0% | 0% | 12.6 |
+| ChaoticRedeemer | 0/50 | 0% [0%,7%] | 0% | 0% | 14.0 |
+| Grudger | 0/50 | 0% [0%,7%] | 0% | 0% | 15.0 |
+| AlwaysCheat | 0/50 | 0% [0%,7%] | 0% | 0% | 16.0 |
+| GlobalPavlov | 0/50 | 0% [0%,7%] | 0% | 0% | 17.2 |
+| Random | 0/50 | 0% [0%,7%] | 0% | 0% | 17.8 |
+| StochasticPavlov | 0/50 | 0% [0%,7%] | 0% | 0% | 19.5 |
+| Pavlov | 0/50 | 0% [0%,7%] | 0% | 0% | 19.5 |
+| Bully | 0/50 | 0% [0%,7%] | 0% | 0% | 21.0 |
 
-**具體結論（用信賴區間判定，非單點）：**
-- **🏆 穩健優勢者（2）**：`Awkward`（佔比 67.2%，95% CI 下界 ≥ 66.5%）、`Joss`（32.1%，下界 ≥ 31.4%）——兩者 100% 存活、合計 ~99% 佔比，且 CI 極窄，結論非常確定。
-- **💀 穩健滅絕者（14）**：存活率 95% CI 上界 < 5%——`TitForTwoTats`、`LimitedPunisher`、`SkepticalRedeemer`、`Statistical`、`SmartProber`、`AlwaysCooperate`、`SmartEnvious`、`Grudger`、`Random`、`StochasticPavlov`、`GlobalPavlov`、`Pavlov`、`AlwaysCheat`、`Bully`。
-- **❓ 邊界（5）**：`GenerousTitForTat`、`ChaoticRedeemer`、`TolerantGrudger`、`TitForTat`、`Redeemer`——存活率 CI 上界 5–7%，偶爾僥倖在某些 run 殘存，但仍極弱。
-
-**解讀：**
-- **Awkward + Joss 通吃**（合計佔比 ~99%）。兩者本質都是「大多合作、約 10% 偷背叛、不記仇」。
-- 高雜訊環境（外部 5% + 內部 2% + Awkward 自帶 10% 手滑）下，**會報復的策略（TFT/Grudger 家族）被雜訊拖進互相懲罰而自我毀滅**，不報復的寬容者勝出——噪音 IPD 的已知結論。
-- ⚠️「滅絕」**不等於**「該刪」——TFT 等是因生態被 Awkward 主宰而落敗，非本身冗餘。這份榜單是**背景**，不是刪除清單。
+**具體結論：**
+- **🏆 系統治冠軍**：`GenerousTitForTat`（奪冠 78%、top-5 96%、平均名次 1.5）——這是**經典 Axelrod 結果**：善良（不先背叛）＋ 會報復 ＋ 寬容（10% 機率原諒，打破噪音死亡螺旋）的 nice reciprocator 長期勝出。
+- **🥈 穩定強者**：`SkepticalRedeemer`（奪冠 10%、**top-5 96%**）、`TitForTwoTats`（奪冠 6%、**top-5 90%**）——兩者幾乎每局都進前五，是僅次於 GTFT 的常勝群。`SmartProber`、`AlwaysCooperate`、`LimitedPunisher` 也常在前段。
+- **💀 背叛/剝削者墊底**：`Joss`（平均名次 12.6、**0 奪冠**）、`Bully`(21.0)、`AlwaysCheat`(16.0)、Pavlov 家族與 `Random` 全在後段。`Awkward` 雖僥倖奪冠 1 次，平均名次也只有 10.5（中後段）。
+- ⚠️「墊底」**不等於**「該刪」——這份榜單只是**生態背景**，去重的判準是行為指紋（見下節），不是勝率。經典參考策略（TFT/AllC/AllD/Random/Grudger/Pavlov）即使在本生態落敗仍保留作科學錨點。
 
 ---
 
@@ -145,9 +143,9 @@ TolerantGrudger       0.92   0.10   0.92   0.18   0.24
 # 行為指紋（數十秒）
 docker run --rm -e TQDM_DISABLE=1 -v "$(pwd):/app" <image> python -u -m tools.fingerprint
 
-# 存活率研究（多核平行 + 95% CI；本報告用 N=100，工具預設 SURV_RUNS=40）
-docker run --rm -e TQDM_DISABLE=1 -e SURV_RUNS=100 -e SURV_WORKERS=20 -v "$(pwd):/app" <image> python -u -m tools.survival
+# 勝率研究（忠實重用正式 app 演化，跑到穩定；本報告用 N=50，工具預設 SURV_RUNS=30）
+docker run --rm -e TQDM_DISABLE=1 -e SURV_RUNS=50 -e SURV_WORKERS=20 -v "$(pwd):/app" <image> python -u -m tools.survival
 ```
 
-> 本報告的存活率數據於遠端 20 核測試機以 **N=100 獨立演化**（seeds 1..100，固定可重現）重產，工具直接輸出每策略的 95% 信賴區間與「穩健優勢/穩健滅絕」結論。
-> 為何用 N=100 而非 40：用 Wilson CI 算，0/40 存活者的存活率 95% CI 上界仍 ~8.8%（無法宣稱「穩健滅絕」）；N=100 可壓到 ~3.7%（<5%），故 14 個策略得以**有信賴區間地**判定為穩健滅絕。
+> 本報告的勝率數據於遠端 20 核測試機以 **N=50 次完整演化**（seeds 1..50，每次**跑到 `stability=100` 穩定**，固定可重現）重產，耗時 ~4.4 小時。工具直接呼叫 `simulation.run_evolution_simulation`（與正式 app 同一套邏輯、同預設參數），輸出每策略的奪冠率（Wilson 95% CI）、top-3/top-5 入榜率與平均名次。
+> ⚠️ 切勿為了加速而調小 `SURV_ROUNDS`/`SURV_MATCHES` 或封頂世代——初版正因此（80/50、封頂 100 代）停在「早期剝削暫態」，得出與正式 app 完全相反的失真結論。
