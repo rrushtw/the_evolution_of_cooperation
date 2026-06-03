@@ -41,36 +41,40 @@ NEAR_THRESHOLD = 0.10        # (合作率 ⊕ 正規化得分) 向量歐氏距�
 
 def head_to_head(StratCls, PanelCls, rounds):
     """有雜訊對戰，回傳 (受測策略合作率, 受測策略平均每回合得分)。"""
-    s = StratCls()
-    p = PanelCls()
-    coop = 0
-    score = 0
+    strategy = StratCls()
+    panel_member = PanelCls()
+    coop_count = 0
+    score_total = 0
     for _ in range(rounds):
-        i_s = s.apply_internal_noise(s.play(p.unique_id, p.my_history, p.total_score))
-        i_p = p.apply_internal_noise(p.play(s.unique_id, s.my_history, s.total_score))
-        a_s = apply_noise(i_s, NOISE)
-        a_p = apply_noise(i_p, NOISE)
-        r_s, r_p = RESULT_MATRIX[(a_s, a_p)]
-        s.update(p.unique_id, i_s, a_s, i_p, a_p, r_s)
-        p.update(s.unique_id, i_p, a_p, i_s, a_s, r_p)
-        if a_s == Move.COOPERATE:
-            coop += 1
-        score += PAYOFF[r_s]
-    return coop / rounds, score / rounds
+        strat_intended = strategy.apply_internal_noise(
+            strategy.play(panel_member.unique_id, panel_member.my_history, panel_member.total_score))
+        panel_intended = panel_member.apply_internal_noise(
+            panel_member.play(strategy.unique_id, strategy.my_history, strategy.total_score))
+        strat_actual = apply_noise(strat_intended, NOISE)
+        panel_actual = apply_noise(panel_intended, NOISE)
+        strat_result, panel_result = RESULT_MATRIX[(strat_actual, panel_actual)]
+        strategy.update(panel_member.unique_id,
+                        strat_intended, strat_actual, panel_intended, panel_actual, strat_result)
+        panel_member.update(strategy.unique_id,
+                            panel_intended, panel_actual, strat_intended, strat_actual, panel_result)
+        if strat_actual == Move.COOPERATE:
+            coop_count += 1
+        score_total += PAYOFF[strat_result]
+    return coop_count / rounds, score_total / rounds
 
 
 def soft_fingerprint(StratCls, panel):
     """回傳 (合作率向量, 得分向量)，各維對應一個 panel 成員，對 SEEDS 取平均。"""
     coop_vec, score_vec = [], []
-    for P in panel:
-        cs, ss = [], []
+    for panel_cls in panel:
+        coop_samples, score_samples = [], []
         for seed in SEEDS:
             random.seed(seed)
-            c, s = head_to_head(StratCls, P, ROUNDS)
-            cs.append(c)
-            ss.append(s)
-        coop_vec.append(sum(cs) / len(cs))
-        score_vec.append(sum(ss) / len(ss))
+            coop_rate, avg_score = head_to_head(StratCls, panel_cls, ROUNDS)
+            coop_samples.append(coop_rate)
+            score_samples.append(avg_score)
+        coop_vec.append(sum(coop_samples) / len(coop_samples))
+        score_vec.append(sum(score_samples) / len(score_samples))
     return coop_vec, score_vec
 
 

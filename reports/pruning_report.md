@@ -18,10 +18,13 @@
 
 兩個互補信號，皆在容器內、固定 seed、可重現：
 
-| 信號 | 工具 | 看什麼 | 限制 |
-|---|---|---|---|
-| **行為指紋**（找嫌疑） | `fingerprint.py` | 對固定 panel（AllC/AllD/TFT/Grudger/Random）的「合作率＋得分」向量，多 seed 平均（雜訊 5%） | 1v1 量測，**看不到跨對手耦合**（如 GlobalPavlov 的遷怒），也觸發不了只對特定對手才顯現的條件邏輯（嫉妒/救贖/拉黑） |
-| **存活率**（生態背景） | `survival.py` | 真實多人演化跑 40 runs × 100 世代，統計存活/滅絕 | 結果隨選擇壓力變動；本生態趨向「贏家通吃」，**滅絕≠冗餘** |
+**行為指紋（找嫌疑）— `fingerprint.py`**
+- 看什麼：對固定 panel（AllC/AllD/TFT/Grudger/Random）的「合作率＋得分」向量，多 seed 平均（雜訊 5%）。
+- 限制：1v1 量測，**看不到跨對手耦合**（如 GlobalPavlov 的遷怒），也觸發不了只對特定對手才顯現的條件邏輯（嫉妒/救贖/拉黑）。
+
+**存活率（生態背景）— `survival.py`**
+- 看什麼：真實多人演化跑 40 runs × 100 世代，統計存活/滅絕。
+- 限制：結果隨選擇壓力變動；本生態趨向「贏家通吃」，**滅絕≠冗餘**。
 
 ---
 
@@ -113,20 +116,16 @@ TolerantGrudger       0.92   0.10   0.92   0.18   0.24
 
 ### 🔴 已刪除（2）— 唯一站得住的真冗餘
 
-| 策略 | 冗餘對象 | 證據 |
-|---|---|---|
-| `GreedyProber` | `SmartProber` | 偵察/分類/剝削骨架**逐行相同**，唯一差別是「對好人改演 GTFT＋Joss 偷襲」；而 `Joss` 已單獨存在 → 偵察骨架與 Joss 味兩個成分都重複。 |
-| `ForgivingTitForTat` | `TitForTat` | 與 TFT 近重複（指紋群組 3 已消失即證）；保留 TFT（科學基準）＋ GTFT（誠實的機率性抗噪），FTFT 的 intended-oracle 抗噪職能由 GTFT 以更正當方式覆蓋。 |
+- **`GreedyProber`（冗餘於 `SmartProber`）**：偵察/分類/剝削骨架**逐行相同**，唯一差別是「對好人改演 GTFT＋Joss 偷襲」；而 `Joss` 已單獨存在 → 偵察骨架與 Joss 味兩個成分都重複。
+- **`ForgivingTitForTat`（冗餘於 `TitForTat`）**：與 TFT 近重複（指紋群組 3 已消失即證）；保留 TFT（科學基準）＋ GTFT（誠實的機率性抗噪），FTFT 的 intended-oracle 抗噪職能由 GTFT 以更正當方式覆蓋。
 
 ### 🟢 指紋曾標「冗餘」但**保留**（機制獨特，指紋誤判）
 
-| 策略 | 指紋為何誤判 | 真正的獨特機制 |
-|---|---|---|
-| `SkepticalRedeemer` | 淨合作率近 TitForTwoTats | 唯一具「機率性誤審 25%（對惡意 75% 放過、對無辜 25% 錯罰）＋ 救贖計數（互助 −1）＋ 讀意圖」 |
-| `TolerantGrudger` | 對 panel 近多個寬容者 | 「三振**終身**放逐」——與 Grudger（一振終身）、TitForTwoTats（報復一次就原諒）皆不同 |
-| `SmartEnvious` | 1v1 觸發不了嫉妒，看似 AllC | 嫉妒觸發的**條件式剝削**（對手均分>我 且 作弊率<3% 才攻擊） |
-| `ChaoticRedeemer` | 在 Redeemer 家族中 | 「**對稱**噪音感知」——Redeemer 三兄弟「完美感知→對稱噪音→非對稱偏誤」階梯的中間階，刪了階梯就斷 |
-| `StochasticPavlov` | ~0.5 blob | 機率性 Win-Stay-Lose-Shift（輸了會「猶豫」不一定切換），非確定性 Pavlov |
+- **`SkepticalRedeemer`**：指紋誤判是因淨合作率近 TitForTwoTats；但它是唯一具「機率性誤審 25%（對惡意 75% 放過、對無辜 25% 錯罰）＋ 救贖計數（互助 −1）＋ 讀意圖」者。
+- **`TolerantGrudger`**：指紋誤判是因對 panel 近多個寬容者；但它是「三振**終身**放逐」——與 Grudger（一振終身）、TitForTwoTats（報復一次就原諒）皆不同。
+- **`SmartEnvious`**：指紋誤判是因 1v1 觸發不了嫉妒、看似 AllC；真正機制是嫉妒觸發的**條件式剝削**（對手均分>我 且 作弊率<3% 才攻擊）。
+- **`ChaoticRedeemer`**：指紋誤判是因落在 Redeemer 家族中；它是「**對稱**噪音感知」——Redeemer 三兄弟「完美感知→對稱噪音→非對稱偏誤」階梯的中間階，刪了階梯就斷。
+- **`StochasticPavlov`**：指紋誤判是因落在 ~0.5 blob；它是機率性 Win-Stay-Lose-Shift（輸了會「猶豫」不一定切換），非確定性 Pavlov。
 
 ### ⚪ 其餘保留（經典錨點 + 生態主角 + 獨特機制）
 `AlwaysCooperate`、`AlwaysCheat`、`TitForTat`、`Random`、`Grudger`、`Pavlov`（Axelrod 經典參考）；`Awkward`、`Joss`（生態主角）；`GenerousTitForTat`（最強善良/誠實抗噪）；`GlobalPavlov`（遷怒跨對手耦合，專案招牌）；`Bully`（攀附強者/霸凌弱者）；`Redeemer`、`SmartProber`、`Statistical`、`LimitedPunisher`、`TitForTwoTats`（各有獨特機制）。
