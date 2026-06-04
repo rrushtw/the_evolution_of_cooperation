@@ -118,13 +118,20 @@ def ascii_curve(rows):
 
 
 def find_critical(rows):
-    """臨界點：(a) 相鄰點合作率最陡降段；(b) 合作率 50% 的內插交越點。"""
-    # (a) 最陡降
+    """臨界點：(a) 相鄰點合作率變化最劇烈的「相變段」；(b) 合作率 50% 的內插交越點。
+
+    相變方向：互動越稀疏（rounds 越小）合作越可能崩潰，故以「相鄰點合作率
+    絕對變化量」最大者為相變段，並以「往稀疏方向」描述崩跌幅度。
+    """
+    # (a) 相鄰點絕對變化最大的相變段
     steepest = None
     for i in range(1, len(rows)):
-        drop = rows[i - 1]["coop_mean"] - rows[i]["coop_mean"]
-        if steepest is None or drop > steepest[0]:
-            steepest = (drop, rows[i - 1]["rounds"], rows[i]["rounds"])
+        delta = abs(rows[i]["coop_mean"] - rows[i - 1]["coop_mean"])
+        if steepest is None or delta > steepest[0]:
+            # 一律以 (稀疏 rounds, 緊密 rounds) 呈現
+            sparse, dense = rows[i - 1], rows[i]
+            steepest = (delta, sparse["rounds"], dense["rounds"],
+                        sparse["coop_mean"], dense["coop_mean"])
 
     # (b) 50% 交越（合作率由高到低穿越 0.5；rows 已按 rounds 由小到大，故反向找）
     crossing = None
@@ -205,8 +212,10 @@ def main():
     steepest, crossing = find_critical(rows)
     print("\n【臨界點 / 相變】")
     if steepest:
-        print(f"  最陡降段：rounds {steepest[1]} → {steepest[2]} "
-              f"間合作率掉 {steepest[0]:.0%}")
+        _, sparse_r, dense_r, sparse_c, dense_c = steepest
+        print(f"  相變段：rounds 由 {dense_r} 降到 {sparse_r}（互動變稀疏）時，"
+              f"合作率崩跌 {abs(dense_c - sparse_c):.0%}"
+              f"（{dense_c:.0%} → {sparse_c:.0%}）")
     if crossing is not None:
         print(f"  合作率 50% 交越點：rounds ≈ {crossing:.1f}"
               f"（每對重複相遇 ≈ {repeat_meetings(crossing, pop):.1f} 次）")
