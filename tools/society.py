@@ -106,13 +106,14 @@ def ascii_curve(rows):
             else:
                 row += "  "
         lines.append(row)
-    # x 軸標籤
+    # x 軸：每欄一個索引，下方附「索引 → rounds」圖例（避免多位數標籤擠在一起）
     axis = "       +" + "──" * len(rows)
-    labels = "        "
-    for r in rows:
-        labels += f"{r['rounds']:>2}"[:2]
+    index_row = "        " + "".join(f"{i+1:>2}" for i in range(len(rows)))
     lines.append(axis)
-    lines.append(labels + "   ← rounds（每對重複相遇 ≈ 0.73×rounds）")
+    lines.append(index_row + "   ← 索引（由稀疏到緊密）")
+    legend = "  圖例 索引→rounds： " + "  ".join(
+        f"{i+1}={r['rounds']}" for i, r in enumerate(rows))
+    lines.append(legend)
     return "\n".join(lines)
 
 
