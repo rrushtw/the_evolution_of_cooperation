@@ -80,6 +80,16 @@ docker run --rm -e TQDM_DISABLE=1 -v "$(pwd)/strategies:/app/strategies" <image>
 
 > **附註：PyPy 已評估並否決。** 本 workload 為 dict/set/Enum 配置密集型，非 PyPy 擅長的數值熱迴圈。實測 PyPy 在每種設定下都比 CPython 慢 (-5% 到 -2.3×)，故不採用。
 
+## 🔬 研究工具 (Research, `tools/`)
+
+`tools/` 內的分析工具不會被策略 loader 載入，純做研究、不改動策略：
+
+- **`tools/fingerprint.py`**：行為指紋——找出輸出近重複的策略群組。
+- **`tools/survival.py`**：存活率/勝率研究——N 次演化到穩定的奪冠頻率 + Wilson 95% CI。
+- **`tools/society.py`**：互動稀疏化研究——以 `rounds_per_game`（≈ 每對重複相遇次數）為旋鈕，量測「現代社會互動變少 → 合作崩潰」的相變。**發現合作率在「每對重複相遇 ≈ 4.6 次」（rounds 6↔7 一步之差）處斷崖式崩跌（79% → 35%）**，詳見 [`reports/society_report.md`](reports/society_report.md)。
+
+策略瘦身分析見 [`reports/pruning_report.md`](reports/pruning_report.md)。
+
 ## 專案結構
 ```
 project/
