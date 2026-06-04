@@ -60,7 +60,7 @@ docker run --rm -e TQDM_DISABLE=1 -v "$(pwd)/strategies:/app/strategies" <image>
 
 ### 已知瓶頸與修正：O(n²) 全歷史掃描
 
-`engine` 會把對手的**全局歷史** (`my_history`，會長到每個體上萬筆) 當作 `opponent_history` 傳進 `play()`。少數策略 (`SmartEnvious`、`SmartProber`、`GreedyProber`) 原本**每回合都整段重掃**這份歷史，使單場 tournament 退化成 O(n²)，速率會從 ~200k/s 一路衰減到 ~27k/s。
+`engine` 會把對手的**全局歷史** (`my_history`，會長到每個體上萬筆) 當作 `opponent_history` 傳進 `play()`。少數策略 (`SmartEnvious`、`SmartProber`) 原本**每回合都整段重掃**這份歷史，使單場 tournament 退化成 O(n²)，速率會從 ~200k/s 一路衰減到 ~27k/s。<br>（Phase 1 當時一併修正的 `GreedyProber` 已於後續策略瘦身中移除——它與 `SmartProber` 骨架重複，詳見 `reports/pruning_report.md`。）
 
 修正方式：為這些策略加上**增量掃描位置 / 累計計數器**，每筆紀錄只看一次（攤銷 O(1)），行為與原本的全掃**完全等價**（相同 seed 下 checksum 不變）。
 
