@@ -27,6 +27,14 @@ def _get_final_ranking(final_counts: collections.Counter, extinction_order: list
     return final_ranking_list
 
 
+def _equilibrium_coop_rate(coop_rate_history: list[float], window: int) -> float:
+    """均衡合作率 = 最後 min(window, 世代數) 代的平均（反映穩定後的社會樣態）。"""
+    if not coop_rate_history:
+        return 0.0
+    tail = coop_rate_history[-window:]
+    return sum(tail) / len(tail)
+
+
 def run_evolution_simulation(
     strategy_types: list[type],  # <-- 傳入的是 "類別" (e.g., TitForTat)
     initial_copies: int,         # e.g., 10
@@ -34,10 +42,17 @@ def run_evolution_simulation(
     rounds_per_game: int,
     avg_matches_per_strategy: int,
     noise: float,
-    stability_threshold: int     # e.g., 100
+    stability_threshold: int,    # e.g., 100
+    collect_coop_stats: bool = False
 ):
     """
     執行一個完整的演化模擬。
+
+    Args:
+        collect_coop_stats: 若為 True，逐代蒐集 "實際出招合作率"，終止時
+            以最後 min(stability_threshold, 世代數) 代的平均作為 "均衡合作率"，
+            回傳 (final_ranking, equilibrium_coop_rate)；預設 False 時行為不變，
+            只回傳 final_ranking（與既有呼叫端完全相容）。
     """
     print("--- 🚀 開始演化模擬 ---")
     print(f"設定: {len(strategy_types)} 種策略, 每種 {initial_copies} 個體")
@@ -69,6 +84,7 @@ def run_evolution_simulation(
 
     last_surviving_types_set = current_surviving_types_set
     extinction_order: list[str] = []
+    coop_rate_history: list[float] = []  # 逐代合作率（僅 collect_coop_stats=True 時）
 
     # --- 3. 世代主迴圈 (Main Loop) ---
     while True:
@@ -77,12 +93,22 @@ def run_evolution_simulation(
         # --- 4. 評估 (Evaluation) ---
         # 呼叫 engine.py 為 "所有" 個體 (70個) 進行評分
         # sorted_population 是依分數排序的 "個體 (instances)" 列表
-        sorted_population = engine.run_tournament(
-            population,
-            rounds_per_game,
-            avg_matches_per_strategy,
-            noise
-        )
+        if collect_coop_stats:
+            sorted_population, gen_coop_rate = engine.run_tournament(
+                population,
+                rounds_per_game,
+                avg_matches_per_strategy,
+                noise,
+                collect_stats=True
+            )
+            coop_rate_history.append(gen_coop_rate)
+        else:
+            sorted_population = engine.run_tournament(
+                population,
+                rounds_per_game,
+                avg_matches_per_strategy,
+                noise
+            )
 
         # --- 5. 演化 (Selection/Reproduction) ---
         population = sorted_population[:-kill_count]
@@ -115,14 +141,20 @@ def run_evolution_simulation(
             print("\n" + "="*40)
             print(f"🏁 模擬結束：生態系已達穩定狀態 (連續 {stability_threshold} 世代)")
             print("="*40)
-            return _get_final_ranking(current_counts, extinction_order, stable=True)
+            ranking = _get_final_ranking(current_counts, extinction_order, stable=True)
+            if collect_coop_stats:
+                return ranking, _equilibrium_coop_rate(coop_rate_history, stability_threshold)
+            return ranking
 
         # 條件 2: 只剩一個贏家 (或全滅)
         if len(current_surviving_types_set) <= 1:
             print("\n" + "="*40)
             print("🏁 模擬結束：已產生最終勝利者")
             print("="*40)
-            return _get_final_ranking(current_counts, extinction_order, stable=False)
+            ranking = _get_final_ranking(current_counts, extinction_order, stable=False)
+            if collect_coop_stats:
+                return ranking, _equilibrium_coop_rate(coop_rate_history, stability_threshold)
+            return ranking
 
         # --- 9. 【關鍵】更新穩定度計數器 ---
         #    (移到迴圈的 "最後", 在檢查完終止條件 "之後")

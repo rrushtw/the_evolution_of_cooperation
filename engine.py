@@ -14,7 +14,7 @@ def apply_noise(intended_move: Move, noise: float) -> Move:
     return intended_move
 
 
-def run_tournament(strategies: list[BaseStrategy], rounds_per_game: int, avg_matches_per_strategy: int, noise: float = 0.0):
+def run_tournament(strategies: list[BaseStrategy], rounds_per_game: int, avg_matches_per_strategy: int, noise: float = 0.0, collect_stats: bool = False):
     """
     互動制模型 (Interaction-Based Model)
 
@@ -23,6 +23,11 @@ def run_tournament(strategies: list[BaseStrategy], rounds_per_game: int, avg_mat
 
     1. 總共模擬 N * M * R/2 次 "單一互動"。
     2. 每一次互動，隨機抽 2 人 (s1, s2) 只玩 "1 回合"。
+
+    Args:
+        collect_stats: 若為 True，額外統計本世代 "實際出招" 的合作率，
+            回傳 (sorted_strategies, coop_rate)；預設 False 時只回傳
+            sorted_strategies（與既有呼叫端完全相容）。
     """
 
     # 1. 重置所有策略
@@ -49,6 +54,10 @@ def run_tournament(strategies: list[BaseStrategy], rounds_per_game: int, avg_mat
         leave=False,
         unit=" 互動"  # 單位是 "互動" 而非 "場"
     )
+
+    # 合作率統計（僅 collect_stats=True 時累計）
+    coop_count = 0
+    move_count = 0
 
     # 4. 【隨機互動迴圈】(主迴圈)
     for _ in progress_bar:
@@ -79,6 +88,14 @@ def run_tournament(strategies: list[BaseStrategy], rounds_per_game: int, avg_mat
         # 6. 查詢 "語意結果"
         (result1, result2) = RESULT_MATRIX[(actual_move1, actual_move2)]
 
+        # 合作率統計：看 "實際出招"（已含雜訊，即社會中真正發生的合作）
+        if collect_stats:
+            move_count += 2
+            if actual_move1 == Move.COOPERATE:
+                coop_count += 1
+            if actual_move2 == Move.COOPERATE:
+                coop_count += 1
+
         # 7. & 8. 【立刻更新】
         #    雙方的 "my_history" (情緒) 和 "total_score" 被即時更新
         strategy1.update(
@@ -104,5 +121,9 @@ def run_tournament(strategies: list[BaseStrategy], rounds_per_game: int, avg_mat
     # 4. 依分數排序 (保持不變)
     sorted_strategies = sorted(
         strategies, key=lambda s: s.total_score, reverse=True)
+
+    if collect_stats:
+        coop_rate = coop_count / move_count if move_count else 0.0
+        return sorted_strategies, coop_rate
 
     return sorted_strategies
